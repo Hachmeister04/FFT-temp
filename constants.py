@@ -60,6 +60,10 @@ HFS_EXCLUSION_COLOR = (250, 160, 160)
 LFS_COLOR = 'b'
 LFS_EXCLUSION_COLOR = (137, 207, 240)
 
+# Cutoffs
+DEFAULT_CUSTOM_DENSITY_CUTOFF = 'H-1'
+DEFAULT_CUSTOM_DENSITY_CUTOFF_VALUE = 1.0
+
 # Folders
 if getpass.getuser().lower()=='vamar':
     DEFAULT_FOLDER_CONFIG = f"/shares/departments/AUG/users/{getpass.getuser().lower()}/configs_reflecto-lab/"
