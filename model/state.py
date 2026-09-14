@@ -58,7 +58,13 @@ class FilterRange:
 
 
 @dataclass
-class ExclusionRange:
+class FrequencyExclusion:
+    """A 1D probing-frequency interval dropped from the merged profile curve.
+
+    Applied per side, after peak-finding: points whose probing frequency falls in
+    [low, high] are removed in compute_aggregated_delays and interpolated over.
+    Contrast with SpectrogramMask, which blanks spectrogram pixels beforehand.
+    """
     low: float = 0.0
     high: float = 0.0
     enabled: bool = True
@@ -73,11 +79,15 @@ class ExclusionRange:
 
 
 @dataclass
-class ExclusionRegion:
-    """A 2D region of the beat-frequency spectrogram to ignore during peak-finding.
+class SpectrogramMask:
+    """A 2D box of the beat-frequency spectrogram blanked before peak-finding.
+
+    Applied per band and side, before the maximum beat frequency is found, so the
+    masked values simply never win the peak fit. Contrast with FrequencyExclusion,
+    which drops whole probing-frequency columns from the final curve afterwards.
 
     The (t_min, t_max) range is shot/discharge time in seconds and gates which
-    sweeps the region applies to. (f_prob_min, f_prob_max) is the probing-frequency
+    sweeps the mask applies to. (f_prob_min, f_prob_max) is the probing-frequency
     extent (spectrogram x-axis) and (f_beat_min, f_beat_max) the beat-frequency
     extent (spectrogram y-axis).
     """
@@ -175,8 +185,8 @@ class ReconstructionInput:
     file_path: str = ''
     spect_params: dict = field(default_factory=dict)
     filters: dict = field(default_factory=dict)
-    exclusion_filters: dict = field(default_factory=dict)
-    exclusion_regions: dict = field(default_factory=dict)
+    frequency_exclusions: dict = field(default_factory=dict)
+    spectrogram_masks: dict = field(default_factory=dict)
     burst_size: int = DEFAULT_BURST_SIZE
     background_burst_size: int = DEFAULT_BURST_SIZE
     start_time: float = DEFAULT_START_TIME

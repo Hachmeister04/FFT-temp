@@ -100,7 +100,7 @@
         }
     },
     "burst_size": 1,
-    "exclusion_filters": {
+    "frequency_exclusions": {
         "HFS": [
             [
                 18000000000.0,

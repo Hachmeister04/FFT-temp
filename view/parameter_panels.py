@@ -63,7 +63,7 @@ class ParameterPanels:
                 {'name': 'High Filter', 'type': 'float', 'value': DEFAULT_FILTER_HIGH, 'suffix': 'Hz', 'siPrefix': True, 'delay': 0},
             ]},
             {'name': 'Exclude frequencies', 'type': 'group', 'addText': 'Add'},
-            {'name': 'Exclude region', 'type': 'group', 'addText': 'Add'},
+            {'name': 'Spectrogram masks', 'type': 'group', 'addText': 'Add'},
         ])
 
         self.profiles = Parameter.create(name='Profiles', type='group', visible=False, children=[

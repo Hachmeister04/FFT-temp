@@ -28,8 +28,12 @@ DEFAULT_LINEARIZATION_SWEEP = int(2 / 35e-6)
 DEFAULT_FILTER_LOW = 0  # Hz
 DEFAULT_FILTER_HIGH = 10 * 1e6  # Hz
 
-# Exclusion regions
-EXCLUSION_REGIONS_MAX_N = 50
+# Frequency exclusions (1D probing-frequency intervals dropped from the profile).
+# Capped at 50 for shotfile compatibility.
+FREQUENCY_EXCLUSIONS_MAX_N = 50
+
+# Spectrogram masks (2D boxes blanked before peak-finding).
+SPECTROGRAM_MASKS_MAX_N = 10
 
 # Reconstruct Params
 DEFAULT_START_TIME = 0  # s

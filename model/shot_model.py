@@ -21,7 +21,7 @@ from constants import (
     DEFAULT_START_TIME, DEFAULT_END_TIME, DEFAULT_TIMESTEP,
 )
 from model.state import (
-    SpectrogramParams, FilterRange, ExclusionRange, ExclusionRegion,
+    SpectrogramParams, FilterRange, FrequencyExclusion, SpectrogramMask,
     InitValues, InitFileData, BeatFrequencyData,
     CurrentSweepData, CurrentFFTData, CurrentDisplayData,
     AggregatedDelayData, DetectorSelection,
@@ -58,12 +58,12 @@ class ShotModel:
             side: {band: None for band in BANDS} for side in SIDES
         }
 
-        # Per-side state
-        self.exclusion_filters = {side: [] for side in SIDES}
+        # Per-side 1D probing-frequency intervals dropped from the merged profile
+        self.frequency_exclusions = {side: [] for side in SIDES}
         self.init_values = {side: InitValues() for side in SIDES}
 
-        # Per-detector (band+side) 2D spectrogram exclusion regions
-        self.exclusion_regions = {side: {band: [] for band in BANDS} for side in SIDES}
+        # Per-detector (band+side) 2D spectrogram boxes blanked before peak-finding
+        self.spectrogram_masks = {side: {band: [] for band in BANDS} for side in SIDES}
 
         # Current detector selection
         self.detector = DetectorSelection()
@@ -329,17 +329,17 @@ class ShotModel:
 
         sxx_min = Sxx.min()
 
-        # ExclusionRange is intentionally NOT masked here: blanking a whole f_beat
-        # column makes the quadratic peak fit return NaN. Those points are dropped
-        # from the final curve in compute_aggregated_delays instead.
+        # FrequencyExclusion is intentionally NOT applied here: blanking a whole
+        # f_beat column makes the quadratic peak fit return NaN. Those points are
+        # dropped from the final curve in compute_aggregated_delays instead.
 
-        # ExclusionRegion (per band/side, 2D box, gated by the current sweep timestamp)
+        # SpectrogramMask (per band/side, 2D box, gated by the current sweep timestamp)
         ts = self.time_stamps[self.detector.sweep]
-        for reg in self.exclusion_regions[side][band]:
-            if not reg.enabled or not (reg.t_min <= ts <= reg.t_max):
+        for mask in self.spectrogram_masks[side][band]:
+            if not mask.enabled or not (mask.t_min <= ts <= mask.t_max):
                 continue
-            cols = (f_probe >= reg.f_prob_min) & (f_probe <= reg.f_prob_max)
-            rows = (f_beat >= reg.f_beat_min) & (f_beat <= reg.f_beat_max)
+            cols = (f_probe >= mask.f_prob_min) & (f_probe <= mask.f_prob_max)
+            rows = (f_beat >= mask.f_beat_min) & (f_beat <= mask.f_beat_max)
             if cols.any() and rows.any():
                 Sxx[np.ix_(rows, cols)] = sxx_min
 
@@ -486,10 +486,10 @@ class ShotModel:
             all_beat_time = all_beat_time[~nan_mask]
             all_f_probe = all_f_probe[~nan_mask]
 
-            # Apply exclusion filters (ExclusionRange): drop these f_probe points
-            # from the final curve. ExclusionRegions are handled upstream by masking
-            # the spectrogram in compute_beatf, so they are not dropped here.
-            for excl in self.exclusion_filters[side]:
+            # Apply FrequencyExclusions: drop these f_probe points from the final
+            # curve. SpectrogramMasks are handled upstream by blanking the
+            # spectrogram in compute_beatf, so they are not dropped here.
+            for excl in self.frequency_exclusions[side]:
                 if not excl.enabled:
                     continue
                 mask = (all_f_probe >= excl.low) & (all_f_probe <= excl.high) & (all_f_probe != 0)
@@ -586,22 +586,24 @@ class ShotModel:
 
         exclusions_dict = {}
         for side in SIDES:
-            exclusions_dict[side] = [excl.to_config_list() for excl in self.exclusion_filters[side] if excl.enabled]
+            exclusions_dict[side] = [
+                excl.to_config_list() for excl in self.frequency_exclusions[side] if excl.enabled
+            ]
 
-        regions_dict = {}
+        masks_dict = {}
         for side in SIDES:
-            regions_dict[side] = {}
+            masks_dict[side] = {}
             for band in BANDS:
-                regions_dict[side][band] = [
-                    reg.to_config_list() for reg in self.exclusion_regions[side][band]
+                masks_dict[side][band] = [
+                    mask.to_config_list() for mask in self.spectrogram_masks[side][band]
                 ]
 
         data = {
             'parameters': params_dict,
             'filters': filters_dict,
             'burst_size': self.detector.burst_size,
-            'exclusion_filters': exclusions_dict,
-            'exclusion_regions': regions_dict,
+            'frequency_exclusions': exclusions_dict,
+            'spectrogram_masks': masks_dict,
             'reconstruction_times': {
                 'start_time': self.reconstruction_start_time,
                 'end_time': self.reconstruction_end_time,
@@ -636,21 +638,31 @@ class ShotModel:
                 if side in filters and band in filters[side]:
                     self.filters[side][band] = FilterRange.from_config_list(filters[side][band])
 
-        exclusions = data.get('exclusion_filters', {})
+        # These two were renamed: 'exclusion_filters' -> 'frequency_exclusions' and
+        # 'exclusion_regions' -> 'spectrogram_masks'. Fall back to the old key names
+        # so configs written before the rename still load.
+        try:
+            exclusions = data['frequency_exclusions']
+        except KeyError:
+            exclusions = data.get('exclusion_filters', {})
         for side in SIDES:
             if side in exclusions:
-                self.exclusion_filters[side] = [
-                    ExclusionRange.from_config_list(e) for e in exclusions[side]
+                self.frequency_exclusions[side] = [
+                    FrequencyExclusion.from_config_list(e) for e in exclusions[side]
                 ]
 
-        regions = data.get('exclusion_regions', {})
+        try:
+            masks = data['spectrogram_masks']
+        except KeyError:
+            masks = data.get('exclusion_regions', {})
         for side in SIDES:
             for band in BANDS:
-                if side in regions and band in regions[side]:
-                    self.exclusion_regions[side][band] = [
-                        ExclusionRegion.from_config_list(r) for r in regions[side][band]
+                if side in masks and band in masks[side]:
+                    self.spectrogram_masks[side][band] = [
+                        SpectrogramMask.from_config_list(m) for m in masks[side][band]
                     ]
-        
+
+
         # Older config files have no 'reconstruction_times' key; keep current values then.
         recon_times = data.get('reconstruction_times', {})
         self.reconstruction_start_time = recon_times.get('start_time', self.reconstruction_start_time)

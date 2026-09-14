@@ -68,42 +68,24 @@ class ReconstructionWorker(QObject):
                     filt = params.filters[side][band]
                     filters_dict[side][band] = [filt.low, filt.high]
 
-            # Convert exclusion filters from ExclusionRange objects to list format
-            exclusion_dict = {}
+            # Convert FrequencyExclusion objects to the [low, high] pairs rpspy expects
+            frequency_exclusions = {}
             for side in ['HFS', 'LFS']:
-                exclusion_dict[side] = [[e.low, e.high] for e in params.exclusion_filters[side] if e.enabled]
+                frequency_exclusions[side] = [
+                    [e.low, e.high] for e in params.frequency_exclusions[side] if e.enabled
+                ]
 
-            # Convert exclusion regions from ExclusionRegion objects to list format
-    #             t_min: float = 0.0
-    # t_max: float = 0.0
-    # f_prob_min: float = 0.0
-    # f_prob_max: float = 0.0
-    # f_beat_min: float = 0.0
-    # f_beat_max: float = 0.0
-    # enabled: bool = True
-    # spectrogram_regions : dict, optional
-    #     2D spectrogram exclusion regions applied per band/side *before*
-    #     peak-finding. Unlike ``exclusion_regions`` (which drops probing-frequency
-    #     columns from the merged curve), each region masks a rectangular
-    #     (shot time, probing frequency, beat frequency) box of a band's
-    #     beat-frequency spectrogram so it is ignored when finding the maximum
-    #     beat frequency. Default is None (no regions for any band/side).
-    #     Structure mirrors ``filters``; each band holds a list of flat 6-element
-    #     regions ``[t_min, t_max, f_prob_min, f_prob_max, f_beat_min, f_beat_max]``,
-    #     with shot time in seconds and frequencies in Hz. Example:
-    #     {
-    #         'HFS': {'K': [], 'Ka': [], 'Q': [[2.0, 3.0, 40e9, 45e9, 1e6, 2e6]], 'V': []},
-    #         'LFS': {'K': [], 'Ka': [], 'Q': [], 'V': []},
-    #     }
-            spectrogram_regions = {'HFS': {}, "LFS": {}}
+            # Convert SpectrogramMask objects to the flat 6-element boxes rpspy expects:
+            # [t_min, t_max, f_prob_min, f_prob_max, f_beat_min, f_beat_max]
+            spectrogram_masks = {'HFS': {}, "LFS": {}}
             for side in ['HFS', 'LFS']:
                 for band in ["K", "Ka", "Q", "V"]:
-                    spectrogram_regions[side][band] = [
+                    spectrogram_masks[side][band] = [
                         [
-                            e.t_min, e.t_max, 
-                            e.f_prob_min, e.f_prob_max, 
+                            e.t_min, e.t_max,
+                            e.f_prob_min, e.f_prob_max,
                             e.f_beat_min, e.f_beat_max,
-                        ] for e in params.exclusion_regions[side][band] if e.enabled
+                        ] for e in params.spectrogram_masks[side][band] if e.enabled
                     ]
 
             rpspy.full_profile_reconstruction(
@@ -114,8 +96,8 @@ class ReconstructionWorker(QObject):
                 shot_linearization=params.shot,
                 spectrogram_options=spectrogram_options,
                 filters=filters_dict,
-                exclusion_regions=exclusion_dict,
-                spectrogram_regions=spectrogram_regions,
+                frequency_exclusions=frequency_exclusions,
+                spectrogram_masks=spectrogram_masks,
                 subtract_background_on_bands=subtract_background_on_bands,
                 subtract_dispersion_on_bands=subtract_dispersion_on_bands,
                 start_time=params.start_time,
