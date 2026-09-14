@@ -96,9 +96,9 @@ class ShotModel:
         self.lfs_gd_at_zero_fp = 0.0
         self.get_init = None
 
-        # Costum density cutoff
+        # Custom density cutoff
         self.custom_density_cutoff = DEFAULT_CUSTOM_DENSITY_CUTOFF
-        self.costum_density_cutoff_value = DEFAULT_CUSTOM_DENSITY_CUTOFF_VALUE
+        self.custom_density_cutoff_value = DEFAULT_CUSTOM_DENSITY_CUTOFF_VALUE
 
     # --- Shot loading ---
 
