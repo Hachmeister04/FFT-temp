@@ -182,8 +182,8 @@ class ReconstructionInput:
     start_time: float = DEFAULT_START_TIME
     end_time: float = DEFAULT_END_TIME
     time_step: float = DEFAULT_TIMESTEP
-    apply_density_cutoff: bool = False
-    density_cutoff: float = DEFAULT_DENSITY_CUTOFF
+    custom_density_cutoff: bool = False
+    density_cutoff_value: float = DEFAULT_DENSITY_CUTOFF
     write_private_shotfile: bool = False
     write_public_shotfile: bool = False
     write_hdf5: bool = True

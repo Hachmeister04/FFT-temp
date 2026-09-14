@@ -7,7 +7,8 @@ from constants import (
     DEFAULT_START_TIME, DEFAULT_END_TIME, DEFAULT_TIMESTEP, DECIMALS_TIMES, DEFAULT_DENSITY_CUTOFF,
     DECIMALS_SWEEP_NUM, DECIMALS_TIMESTAMP,
     DECIMALS_NPERSEG, DECIMALS_NOVERLAP, DECIMALS_NFFT,
-    DECIMALS_EXCLUSIONS, DECIMALS_INIT, DEFAULT_FOLDER_CONFIG
+    DECIMALS_EXCLUSIONS, DECIMALS_INIT, DEFAULT_FOLDER_CONFIG,
+    DEFAULT_CUSTOM_DENSITY_CUTOFF
 )
 
 
@@ -74,8 +75,8 @@ class ParameterPanels:
             {'name': 'Start Time', 'type': 'float', 'value': DEFAULT_START_TIME, 'suffix': 's', 'siPrefix': True, 'decimals': DECIMALS_TIMES, 'delay': 0},
             {'name': 'End Time', 'type': 'float', 'value': DEFAULT_END_TIME, 'suffix': 's', 'siPrefix': True, 'decimals': DECIMALS_TIMES, 'delay': 0},
             {'name': 'Time Step', 'type': 'float', 'value': DEFAULT_TIMESTEP, 'suffix': 's', 'siPrefix': True, 'delay': 0},
-            {'name': 'Apply Custom Density Cutoff', 'type': 'bool', 'value': False, 'delay': 0},
-            {'name': 'Density Cutoff', 'type': 'float', 'value': DEFAULT_DENSITY_CUTOFF, 'suffix': 'm^-3', 'siPrefix': False, 'delay': 0},
+            {'name': 'Apply Custom Density Cutoff', 'type': 'list', 'limits': ['H-0', 'H-1', 'Custom', 'None'], 'value': DEFAULT_CUSTOM_DENSITY_CUTOFF},
+            {'name': 'Density Cutoff Value', 'type': 'float', 'value': DEFAULT_CUSTOM_DENSITY_CUTOFF_VALUE, 'delay': 0},
             {'name': 'Reconstruct Shot', 'type': 'action'},
             {'name': 'Reconstruction Output', 'title': 'Reconstruction Output', 'type': 'group', 'children': [
                 {'name': 'Private Shotfile', 'type': 'bool', 'value': False, 'delay': 0},

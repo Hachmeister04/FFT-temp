@@ -140,6 +140,7 @@ class AppController(QObject):
         p.reconstruct.child('End Time').sigValueChanged.connect(self._h_recon_end)
         p.reconstruct.child('Time Step').sigValueChanged.connect(self._h_recon_step)
         p.reconstruct.child('Reconstruct Shot').sigActivated.connect(self._on_request_reconstruct)
+        #p.reconstruct.child('Apply Custom Density Cutoff').sigValueChanged.connect(self._on_cutoff_changed)
         p.reconstruct.child('Apply Custom Density Cutoff').sigValueChanged.connect(self._on_cutoff_changed)
 
     # --- Helpers to sync model ↔ panels ---
@@ -261,8 +262,9 @@ class AppController(QObject):
         self.view.show_post_load_params(self.panels)
 
         # Except parameters that default to hidden states
-        p.reconstruct.child('Density Cutoff').setOpts(readonly=True)
-        p.reconstruct.child('Density Cutoff').setOpts(visible=False)
+        #p.reconstruct.child('Apply Custom Density Cutoff').setOpts(readonly=True)
+        #p.reconstruct.child('Apply Custom Density Cutoff').setOpts(visible=False)
+        self._on_cutoff_changed()  # Update visibility of density cutoff value
 
         # Sync detector
         self._sync_detector_from_panels()
@@ -763,9 +765,15 @@ class AppController(QObject):
 
     def _on_cutoff_changed(self):
         """Toggle density cutoff visibility."""
-        enabled = self.panels.reconstruct.child('Apply Custom Density Cutoff').value()
-        self.panels.reconstruct.child('Density Cutoff').setOpts(readonly=not enabled)
-        self.panels.reconstruct.child('Density Cutoff').setOpts(visible=enabled)
+        value = self.panels.reconstruct.child('Apply Custom Density Cutoff').value()
+        if value == 'Custom':
+            self.panels.reconstruct.child('Density Cutoff Value').setOpts(title='Density Cutoff Value')
+            self.panels.reconstruct.child('Density Cutoff Value').setOpts(visible=True, suffix='m^-3', siPrefix=False, delay=0)
+        elif value in ['H-0', 'H-1']:
+            self.panels.reconstruct.child('Density Cutoff Value').setOpts(title=f'Density Cutoff Multiplier')
+            self.panels.reconstruct.child('Density Cutoff Value').setOpts(visible=True, suffix='', siPrefix=False, delay=0)
+        elif value == 'None':
+            self.panels.reconstruct.child('Density Cutoff Value').setOpts(visible=False)
 
     # --- Reconstruction ---
 
@@ -801,8 +809,8 @@ class AppController(QObject):
             start_time=p.reconstruct.child('Start Time').value(),
             end_time=p.reconstruct.child('End Time').value(),
             time_step=p.reconstruct.child('Time Step').value(),
-            apply_density_cutoff=p.reconstruct.child('Apply Custom Density Cutoff').value(),
-            density_cutoff=p.reconstruct.child('Density Cutoff').value(),
+            custom_density_cutoff=p.reconstruct.child('Apply Custom Density Cutoff').value(),
+            density_cutoff_value=p.reconstruct.child('Density Cutoff Value').value(),
             write_private_shotfile=p.reconstruct.child('Reconstruction Output').child('Private Shotfile').value(),
             write_public_shotfile=p.reconstruct.child('Reconstruction Output').child('Public Shotfile').value(),
             write_hdf5=write_hdf5,

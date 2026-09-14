@@ -18,7 +18,8 @@ from constants import (
     BANDS, SIDES,
     DEFAULT_LINEARIZATION_SWEEP,
     PROFILE_INVERSION_RESOLUTION,
-    DEFAULT_START_TIME, DEFAULT_END_TIME, DEFAULT_TIMESTEP,
+    DEFAULT_START_TIME, DEFAULT_END_TIME, DEFAULT_TIMESTEP, 
+    DEFAULT_CUSTOM_DENSITY_CUTOFF, DEFAULT_CUSTOM_DENSITY_CUTOFF_VALUE
 )
 from model.state import (
     SpectrogramParams, FilterRange, ExclusionRange, ExclusionRegion,
@@ -94,6 +95,10 @@ class ShotModel:
         self.hfs_gd_at_zero_fp = 0.0
         self.lfs_gd_at_zero_fp = 0.0
         self.get_init = None
+
+        # Costum density cutoff
+        self.custom_density_cutoff = DEFAULT_CUSTOM_DENSITY_CUTOFF
+        self.costum_density_cutoff_value = DEFAULT_CUSTOM_DENSITY_CUTOFF_VALUE
 
     # --- Shot loading ---
 
@@ -596,6 +601,7 @@ class ShotModel:
                     reg.to_config_list() for reg in self.exclusion_regions[side][band]
                 ]
 
+
         data = {
             'parameters': params_dict,
             'filters': filters_dict,
@@ -606,6 +612,10 @@ class ShotModel:
                 'start_time': self.reconstruction_start_time,
                 'end_time': self.reconstruction_end_time,
                 'time_step': self.reconstruction_time_step,
+            },
+            'custom_density_cutoff': {
+                'custom_density_cutoff': self.custom_density_cutoff,
+                'custom_density_cutoff_value': self.custom_density_cutoff_value,
             },
         }
 
@@ -656,3 +666,8 @@ class ShotModel:
         self.reconstruction_start_time = recon_times.get('start_time', self.reconstruction_start_time)
         self.reconstruction_end_time = recon_times.get('end_time', self.reconstruction_end_time)
         self.reconstruction_time_step = recon_times.get('time_step', self.reconstruction_time_step)
+
+        # Older config files have no 'custom_density_cutoff' key; keep current values then.
+        custom_density_cutoff = data.get('custom_density_cutoff',  {})
+        self.custom_density_cutoff = custom_density_cutoff.get('custom_density_cutoff', self.custom_density_cutoff)
+        self.custom_density_cutoff_value = custom_density_cutoff.get('custom_density_cutoff_value', self.custom_density_cutoff_value)
